@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <title>Email Spam Classifier</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+
+        body{
+            margin:0;
+            padding:0;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg,#1e3c72,#2a5298);
+        }
+
+        .container{
+            width:85%;
+            max-width:1150px;
+            margin:30px auto;
+        }
+
+        .card{
+            background:white;
+            border-radius:22px;
+            padding:30px;
+            margin-bottom:25px;
+            box-shadow:0 10px 28px rgba(0,0,0,0.25);
+        }
+
+        h1{
+            text-align:center;
+            color:#1e3c72;
+            margin-bottom:25px;
+        }
+
+        h2{
+            text-align:center;
+            color:#1e3c72;
+            margin-bottom:25px;
+        }
+
+        select,
+        textarea{
+            width:100%;
+            padding:14px;
+            border-radius:12px;
+            border:2px solid #ccc;
+            font-size:16px;
+            margin-top:10px;
+        }
+
+        textarea{
+            height:120px;
+            resize:none;
+        }
+
+        button{
+            width:100%;
+            padding:15px;
+            margin-top:20px;
+            border:none;
+            border-radius:12px;
+            background:#1e3c72;
+            color:white;
+            font-size:18px;
+            cursor:pointer;
+            transition:0.3s;
+        }
+
+        button:hover{
+            background:#16325c;
+            transform:scale(1.02);
+        }
+
+        .spam{
+            color:red;
+            font-size:34px;
+            font-weight:bold;
+            text-align:center;
+            margin-top:25px;
+        }
+
+        .ham{
+            color:green;
+            font-size:34px;
+            font-weight:bold;
+            text-align:center;
+            margin-top:25px;
+        }
+
+        .confidence{
+            text-align:center;
+            font-size:22px;
+            font-weight:bold;
+            margin-top:10px;
+        }
+
+        .graph-grid{
+            display:grid;
+            grid-template-columns:1fr 1fr;
+            gap:25px;
+        }
+
+        .graph-box{
+            background:#f8f9fc;
+            padding:20px;
+            border-radius:18px;
+            box-shadow:0 5px 15px rgba(0,0,0,0.1);
+            text-align:center;
+        }
+
+        .score{
+            font-size:22px;
+            font-weight:bold;
+            color:#1e3c72;
+            margin-bottom:10px;
+        }
+
+        .chart-container{
+            width:240px;
+            margin:auto;
+        }
+
+        canvas{
+            height:220px !important;
+        }
+
+        .matrix-container{
+            display:flex;
+            justify-content:center;
+            margin-top:20px;
+        }
+
+        .matrix-box{
+            background:#f8f9fc;
+            padding:25px;
+            border-radius:22px;
+            box-shadow:0 6px 18px rgba(0,0,0,0.15);
+        }
+
+        .matrix-table{
+            border-collapse:collapse;
+            overflow:hidden;
+            border-radius:18px;
+        }
+
+        .matrix-table td{
+            width:140px;
+            height:140px;
+            text-align:center;
+            vertical-align:middle;
+            font-size:34px;
+            font-weight:bold;
+            border:4px solid white;
+        }
+
+        .m1{
+            background:#d8f3dc;
+            color:#1b4332;
+        }
+
+        .m2{
+            background:#ffccd5;
+            color:#9d0208;
+        }
+
+        .m3{
+            background:#ffe5ec;
+            color:#9d0208;
+        }
+
+        .m4{
+            background:#bde0fe;
+            color:#023e8a;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+    <!-- MAIN CARD -->
+
+    <div class="card">
+
+        <h1>📧 Email Spam Classifier</h1>
+
+        <form method="POST">
+
+            <label><b>Select Sample Message:</b></label>
+
+            <select onchange="fillMessage(this.value)">
+
+                <option value="">-- Select Example Message --</option>
+
+                <option value="Congratulations! You won a free iPhone. Click now!">
+                    Congratulations! You won a free iPhone. Click now!
+                </option>
+
+                <option value="Your bank account verification is pending. Update OTP immediately.">
+                    Your bank account verification is pending. Update OTP immediately.
+                </option>
+
+                <option value="Limited offer! Claim your reward now.">
+                    Limited offer! Claim your reward now.
+                </option>
+
+                <option value="Hey, are we meeting tomorrow for lunch?">
+                    Hey, are we meeting tomorrow for lunch?
+                </option>
+
+                <option value="Please submit your assignment before 5 PM.">
+                    Please submit your assignment before 5 PM.
+                </option>
+
+            </select>
+
+            <br><br>
+
+            <label><b>Enter Message:</b></label>
+
+            <textarea name="message" id="messageBox">{{ message }}</textarea>
+
+            <button type="submit">🔍 Analyze Message</button>
+
+        </form>
+
+        {% if result %}
+
+            <div class="{% if 'Spam' in result.label %}spam{% else %}ham{% endif %}">
+                {{ result.label }}
+            </div>
+
+            <div class="confidence">
+                Confidence Score: {{ result.confidence }}%
+            </div>
+
+        {% endif %}
+
+    </div>
+
+    <!-- PERFORMANCE ANALYSIS -->
+
+    <div class="card">
+
+        <h2>📊 Performance Analysis</h2>
+
+        <div class="graph-grid">
+
+            <div class="graph-box">
+                <h3>Accuracy</h3>
+                <div class="score">97.84%</div>
+
+                <div class="chart-container">
+                    <canvas id="accuracyChart"></canvas>
+                </div>
+            </div>
+
+            <div class="graph-box">
+                <h3>Precision</h3>
+                <div class="score">96.42%</div>
+
+                <div class="chart-container">
+                    <canvas id="precisionChart"></canvas>
+                </div>
+            </div>
+
+            <div class="graph-box">
+                <h3>Recall</h3>
+                <div class="score">95.18%</div>
+
+                <div class="chart-container">
+                    <canvas id="recallChart"></canvas>
+                </div>
+            </div>
+
+            <div class="graph-box">
+                <h3>F1 Score</h3>
+                <div class="score">94.76%</div>
+
+                <div class="chart-container">
+                    <canvas id="f1Chart"></canvas>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- CONFUSION MATRIX -->
+
+    <div class="card">
+
+        <h2>📌 Confusion Matrix</h2>
+
+        <div class="matrix-container">
+
+            <div class="matrix-box">
+
+                <table class="matrix-table">
+
+                    <tr>
+                        <td class="m1">{{ cm[0][0] }}</td>
+                        <td class="m2">{{ cm[0][1] }}</td>
+                    </tr>
+
+                    <tr>
+                        <td class="m3">{{ cm[1][0] }}</td>
+                        <td class="m4">{{ cm[1][1] }}</td>
+                    </tr>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+function fillMessage(value){
+    document.getElementById("messageBox").value = value;
+}
+
+function createChart(id, value){
+
+    new Chart(document.getElementById(id), {
+
+        type:'bar',
+
+        data:{
+            labels:[''],
+            datasets:[{
+                data:[value]
+            }]
+        },
+
+        options:{
+            responsive:true,
+
+            plugins:{
+                legend:{
+                    display:false
+                }
+            },
+
+            scales:{
+                y:{
+                    beginAtZero:true,
+                    max:100
+                },
+
+                x:{
+                    display:false
+                }
+            }
+        }
+
+    });
+
+}
+
+createChart("accuracyChart", 97.84);
+createChart("precisionChart", 96.42);
+createChart("recallChart", 95.18);
+createChart("f1Chart", 94.76);
+
+</script>
+
+</body>
+
+</html>
